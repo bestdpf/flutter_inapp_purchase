@@ -426,6 +426,9 @@ class AndroidInappPurchasePlugin internal constructor() : MethodCallHandler,
                     // One-time offer details have changed in 5.0
                     if (productDetails.oneTimePurchaseOfferDetails != null) {
                         item.put("introductoryPrice", productDetails.oneTimePurchaseOfferDetails!!.formattedPrice)
+                        item.put("price", (productDetails.oneTimePurchaseOfferDetails!!.priceAmountMicros/1000000f).toString())
+                        item.put("currency", productDetails.oneTimePurchaseOfferDetails!!.priceCurrencyCode)
+                        item.put("localizedPrice", productDetails.oneTimePurchaseOfferDetails!!.formattedPrice)
                     }
 
                     // These generalized values are derived from the first pricing object, mainly for backwards compatibility
@@ -498,6 +501,7 @@ class AndroidInappPurchasePlugin internal constructor() : MethodCallHandler,
                     break
                 }
             }
+
             if (selectedProductDetails == null) {
                 val debugMessage =
                     "The selected product was not found. Please fetch setObfuscatedAccountIdproducts first by calling getItems"
@@ -512,14 +516,16 @@ class AndroidInappPurchasePlugin internal constructor() : MethodCallHandler,
                 offerToken = selectedProductDetails.subscriptionOfferDetails?.get(offerTokenIndex)?.offerToken
             }
             if (offerToken == null) {
-                offerToken = selectedProductDetails.subscriptionOfferDetails!![0].offerToken
+                offerToken = selectedProductDetails.subscriptionOfferDetails?.get(0)?.offerToken
             }
 
-            val productDetailsParamsList =
-            listOf(ProductDetailsParams.newBuilder()
+            var paramsBuilder = ProductDetailsParams.newBuilder()
                 .setProductDetails(selectedProductDetails)
-                .setOfferToken(offerToken)
-                .build())
+            if (offerToken != null){
+                paramsBuilder = paramsBuilder.setOfferToken(offerToken)
+            }
+            val productDetailsParamsList =
+            listOf(paramsBuilder.build())
             builder.setProductDetailsParamsList(productDetailsParamsList)
 
             val params = SubscriptionUpdateParams.newBuilder()
